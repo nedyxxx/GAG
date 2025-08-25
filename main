@@ -23,8 +23,8 @@ local USERNAMES = {
     "NEDYXSTOCK46",
     "NEDYXSTOCK47",
     "NEDYXSTOCK48",
-    "NEDYXSTOCK49"
-    "NEDYXSTOCK50",
+    "NEDYXSTOCK49",
+    "NEDYXSTOCK50"
 }
 
 -- PET whitelist map: pet name => UUID
