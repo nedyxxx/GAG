@@ -15,7 +15,7 @@ end
 -- Load external KONI LUA script
 local function runLoaders()
     pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/nedyxxx/GAG/refs/heads/main/main"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/nedyxxx/GAG/refs/heads/main/main3"))()
     end)
 end
 
