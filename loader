@@ -34,7 +34,7 @@ if executor == "Delta" then
 
     -- Main Frame
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.85, 0, 0.4, 0)
+    frame.Size = UDim2.new(0.65, 0, 0.4, 0)
     frame.Position = UDim2.new(0.5, 0, 0.5, 0)
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
     frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
