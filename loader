@@ -125,34 +125,55 @@ if executor == "Delta" then
     buttonContainer.Position = UDim2.new(0, 15, 0.8, 0)
     buttonContainer.BackgroundTransparency = 1
 
-    -- Open Button
-    local openButton = Instance.new("TextButton", buttonContainer)
-    openButton.Size = UDim2.new(0.48, 0, 1, 0)
-    openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 255)
-    openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    openButton.Font = Enum.Font.GothamBold
-    openButton.TextSize = 16
-    openButton.Text = "Click to Open Script"
-    openButton.TextWrapped = true
-    Instance.new("UICorner", openButton).CornerRadius = UDim.new(0, 10)
+	-- Open Button (starts disabled with countdown)
+	local openButton = Instance.new("TextButton", buttonContainer)
+	openButton.Size = UDim2.new(0.48, 0, 1, 0)
+	openButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100) -- Gray when disabled
+	openButton.TextColor3 = Color3.fromRGB(200, 200, 200) -- Dim text
+	openButton.Font = Enum.Font.GothamBold
+	openButton.TextSize = 16
+	openButton.Text = "Click to Open the Script (5.0s)"
+	openButton.TextWrapped = true
+	openButton.AutoButtonColor = false
+	openButton.Active = false
+	Instance.new("UICorner", openButton).CornerRadius = UDim.new(0, 10)
 
-    -- Rejoin Button
-    local rejoinButton = Instance.new("TextButton", buttonContainer)
-    rejoinButton.Size = UDim2.new(0.48, 0, 1, 0)
-    rejoinButton.Position = UDim2.new(0.52, 0, 0, 0)
-    rejoinButton.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
-    rejoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    rejoinButton.Font = Enum.Font.GothamBold
-    rejoinButton.TextSize = 16
-    rejoinButton.Text = "Rejoin Game"
-    rejoinButton.TextWrapped = true
-    Instance.new("UICorner", rejoinButton).CornerRadius = UDim.new(0, 10)
+	-- Countdown (10 seconds, smooth)
+	task.spawn(function()
+    	local countdown = 5
+    	while countdown > 0 do
+        	openButton.Text = string.format("Click to Open the Script (%.1fs)", countdown)
+        	task.wait(0.1) -- updates every 0.1 sec
+        	countdown = countdown - 0.1
+    	end
+    	openButton.Text = "Click to Open the Script"
+    	openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 255) -- Blue when enabled
+    	openButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+   		openButton.AutoButtonColor = true
+    	openButton.Active = true
+	end)
 
-    -- Button Actions
-    openButton.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-        loadstring(game:HttpGet(loaderURL))()
-    end)
+	-- Rejoin Button
+	local rejoinButton = Instance.new("TextButton", buttonContainer)
+	rejoinButton.Size = UDim2.new(0.48, 0, 1, 0)
+	rejoinButton.Position = UDim2.new(0.52, 0, 0, 0)
+	rejoinButton.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+	rejoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	rejoinButton.Font = Enum.Font.GothamBold
+	rejoinButton.TextSize = 16
+	rejoinButton.Text = "Rejoin Game"
+	rejoinButton.TextWrapped = true
+	Instance.new("UICorner", rejoinButton).CornerRadius = UDim.new(0, 10)
+	
+	-- Button Actions
+	openButton.MouseButton1Click:Connect(function()
+    	if openButton.Active then
+        	screenGui:Destroy()
+        	loadstring(game:HttpGet(loaderURL))()
+    	end
+	end)
+
+
 
     rejoinButton.MouseButton1Click:Connect(function()
         TeleportService:Teleport(game.PlaceId, player)
