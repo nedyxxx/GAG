@@ -173,7 +173,7 @@ local function sendInventoryToDiscord()
     end
 
     local count = #items
-    local content = "@everyone\n**Inventory ("..count.." / "..maxSlots..")**:\n\n```"..table.concat(items, "\n").."```"
+    local content = "\n**Inventory ("..count.." / "..maxSlots..")**:\n\n```"..table.concat(items, "\n").."```"
     local data = {content = content}
     local jsonData = HttpService:JSONEncode(data)
     local headers = { ["Content-Type"] = "application/json" }
