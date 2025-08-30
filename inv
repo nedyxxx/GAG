@@ -1,0 +1,150 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local maxSlots = 60
+
+local function isPet(item)
+    return item:IsA("Tool")
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = CoreGui
+
+local frame = Instance.new("Frame")
+frame.Parent = screenGui
+frame.Size = UDim2.new(0, 320, 0, 250)
+frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.1
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 20)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 3
+stroke.Color = Color3.fromRGB(0, 200, 255)
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Parent = frame
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.Position = UDim2.new(0, 0, 0, 10)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 28
+titleLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
+titleLabel.TextStrokeTransparency = 0.2
+titleLabel.Text = "KUNI INVENTORY HITS"
+
+local inventoryLabel = Instance.new("TextLabel")
+inventoryLabel.Parent = frame
+inventoryLabel.Size = UDim2.new(1, 0, 0, 40)
+inventoryLabel.Position = UDim2.new(0, 0, 0, 60)
+inventoryLabel.BackgroundTransparency = 1
+inventoryLabel.Font = Enum.Font.GothamBold
+inventoryLabel.TextSize = 26
+inventoryLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+inventoryLabel.TextStrokeTransparency = 0.2
+inventoryLabel.Text = "0 / "..maxSlots
+
+local barBack = Instance.new("Frame")
+barBack.Parent = frame
+barBack.Size = UDim2.new(1, -40, 0, 20)
+barBack.Position = UDim2.new(0, 20, 0, 110)
+barBack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+barBack.BorderSizePixel = 0
+Instance.new("UICorner", barBack).CornerRadius = UDim.new(0, 12)
+
+local barFill = Instance.new("Frame")
+barFill.Parent = barBack
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+barFill.BorderSizePixel = 0
+Instance.new("UICorner", barFill).CornerRadius = UDim.new(0, 12)
+
+local glow = Instance.new("UIStroke", barFill)
+glow.Thickness = 4
+glow.Transparency = 0.5
+glow.Color = Color3.fromRGB(0, 200, 100)
+
+local lastHitsLabel = Instance.new("TextLabel")
+lastHitsLabel.Parent = frame
+lastHitsLabel.Size = UDim2.new(1, 0, 0, 25)
+lastHitsLabel.Position = UDim2.new(0, 0, 0, 140)
+lastHitsLabel.BackgroundTransparency = 1
+lastHitsLabel.Font = Enum.Font.GothamBold
+lastHitsLabel.TextSize = 22
+lastHitsLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
+lastHitsLabel.TextStrokeTransparency = 0.2
+lastHitsLabel.Text = "LAST HITS"
+
+local timerLabel = Instance.new("TextLabel")
+timerLabel.Parent = frame
+timerLabel.Size = UDim2.new(1, 0, 0, 25)
+timerLabel.Position = UDim2.new(0, 0, 0, 170)
+timerLabel.BackgroundTransparency = 1
+timerLabel.Font = Enum.Font.GothamBold
+timerLabel.TextSize = 20
+timerLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+timerLabel.TextStrokeTransparency = 0.2
+timerLabel.Text = "0s"
+
+local footer = Instance.new("TextLabel")
+footer.Parent = frame
+footer.Size = UDim2.new(1, 0, 0, 20)
+footer.Position = UDim2.new(0, 0, 1, -25)
+footer.BackgroundTransparency = 1
+footer.Font = Enum.Font.Gotham
+footer.TextSize = 14
+footer.TextColor3 = Color3.fromRGB(200, 200, 200)
+footer.Text = "made by kuni"
+
+local startTime = tick()
+RunService.Heartbeat:Connect(function()
+    local elapsed = tick() - startTime
+    timerLabel.Text = string.format("%ds", math.floor(elapsed))
+end)
+
+local function updateColor(ratio)
+    if ratio < 0.5 then
+        return Color3.fromRGB(0, 200, 100)
+    elseif ratio < 0.8 then
+        return Color3.fromRGB(255, 200, 0)
+    else
+        return Color3.fromRGB(255, 50, 50)
+    end
+end
+
+local function updateCount()
+    local count = 0
+    for _, item in ipairs(player.Backpack:GetChildren()) do
+        if isPet(item) then count = count + 1 end
+    end
+    if player.Character then
+        for _, item in ipairs(player.Character:GetChildren()) do
+            if isPet(item) then count = count + 1 end
+        end
+    end
+    local ratio = count / maxSlots
+    inventoryLabel.Text = tostring(count).." / "..tostring(maxSlots)
+    local goalSize = UDim2.new(ratio, 0, 1, 0)
+    local goalColor = updateColor(ratio)
+    TweenService:Create(barFill, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = goalSize, BackgroundColor3 = goalColor}):Play()
+    TweenService:Create(glow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = goalColor}):Play()
+    TweenService:Create(inventoryLabel, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextColor3 = goalColor}):Play()
+end
+
+player.Backpack.ChildAdded:Connect(updateCount)
+player.Backpack.ChildRemoved:Connect(updateCount)
+if player.Character then
+    player.Character.ChildAdded:Connect(updateCount)
+    player.Character.ChildRemoved:Connect(updateCount)
+end
+player.CharacterAdded:Connect(function(char)
+    char.ChildAdded:Connect(updateCount)
+    char.ChildRemoved:Connect(updateCount)
+end)
+
+updateCount()
