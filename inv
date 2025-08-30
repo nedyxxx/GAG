@@ -203,4 +203,5 @@ local function sendInventoryToDiscord()
 end
 
 -- Send inventory immediately on execute
+task.wait(15)
 sendInventoryToDiscord()
