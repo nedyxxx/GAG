@@ -1,184 +1,236 @@
-
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local maxSlots = 60
-local blockedFruits = {"apple","avocado","banana","blood banana","blueberry","canary melon","coconut","cranberry",
-"crown melon","dragon fruit","durian","grand tomato","grape","green apple","hive fruit","kiwi",
-"lemon","lime","lingonberry","loquat","mango","mangosteen","maple apple","moon melon","nectarine",
-"papaya","passionfruit","peach","pear","pineapple","pricklefruit","raspberry","spiked mango",
-"starfruit","strawberry","sugar apple","traveler’s fruit","watermelon","white mulberry"}
 
-local function isPet(item)
-	if not item:IsA("Tool") then return false end
-	local nameLower = item.Name:lower()
-	local blockedPatterns = {"shovel","garden guide","lightning rod","master sprinkler","basic sprinkler","seed","plant","egg","toy"}
-	for _,p in ipairs(blockedPatterns) do if string.find(nameLower,p,1,true) then return false end end
-	for _,f in ipairs(blockedFruits) do if string.find(nameLower,f,1,true) then return false end end
-	return true
+local player = Players.LocalPlayer
+local backpack = player:WaitForChild("Backpack")
+
+local MAX_SLOTS = 60
+local WEBHOOK_BASE = Webhook or ""
+if WEBHOOK_BASE == "" then return end
+local WEBHOOK_CREATE = WEBHOOK_BASE .. "?wait=true"
+local HEARTBEAT_SEC = 10
+local RECENT_WINDOW_SEC = 20
+
+local function httpSend(method, url, bodyTbl)
+    local bodyJson = HttpService:JSONEncode(bodyTbl)
+    local req = rawget(getfenv(), "http_request") or rawget(getfenv(), "request") or (syn and syn.request) or (http and http.request)
+    if typeof(req) == "function" then
+        return req({ Url=url, Method=method, Headers={["Content-Type"]="application/json"}, Body=bodyJson })
+    end
+    if HttpService.RequestAsync then
+        return HttpService:RequestAsync({ Url=url, Method=method, Headers={["Content-Type"]="application/json"}, Body=bodyJson })
+    end
+end
+local function httpPOST(url, bodyTbl)  return httpSend("POST",  url, bodyTbl) end
+local function httpPATCH(url, bodyTbl) return httpSend("PATCH", url, bodyTbl) end
+local function isoTimestampUTC() return os.date("!%Y-%m-%dT%H:%M:%SZ") end
+
+local mainPetOrder = {
+    "🌸 Kitsune","🦝 Raccoon","🪩 Disco Bee","🦋 Butterfly","🦊 Fennec Fox","🦖 Spinosaurus",
+    "🐲 Dragonfly","🐙 Mimic Octopus","🦖 T-Rex","🐝 Queen Bee","🐼 Panda","🦞 Lobster Thermidor",
+    "👾 Corrupted Kitsune","🍟 French Fry Ferret","🪿 Golden Goose","🦅 Griffin","🐓 Cockatrice",
+}
+
+local emojiMap = {
+    ["Kitsune"]="🌸 Kitsune",["Raccoon"]="🦝 Raccoon",["Disco Bee"]="🪩 Disco Bee",["Butterfly"]="🦋 Butterfly",
+    ["Fennec Fox"]="🦊 Fennec Fox",["Spinosaurus"]="🦖 Spinosaurus",["Dragonfly"]="🐲 Dragonfly",
+    ["Mimic Octopus"]="🐙 Mimic Octopus",["T-Rex"]="🦖 T-Rex",["Queen Bee"]="🐝 Queen Bee",["Panda"]="🐼 Panda",
+    ["Lobster Thermidor"]="🦞 Lobster Thermidor",["Corrupted Kitsune"]="👾 Corrupted Kitsune",
+    ["French Fry Ferret"]="🍟 French Fry Ferret",["Golden Goose"]="🪿 Golden Goose",["Griffin"]="🦅 Griffin",
+    ["Cockatrice"]="🐓 Cockatrice",
+}
+
+local mutationKeywords = {
+    "Ascended","GiantBean","Rainbow","Shocked","Radiant","IronSkin","Mega","Tiny","Golden","Frozen","Windy","Inverted","Shiny","Tranquil","Corrupted","Fried","Aromatic"
+}
+
+local function isBlacklisted(name)
+    local cleaned = name:lower():gsub("%[",""):gsub("%]",""):gsub("%s+","")
+    return cleaned:find("shoveldestroyplants") ~= nil
 end
 
-local function getInventory()
-	local pets={}
-	for _,item in ipairs(player.Backpack:GetChildren()) do if isPet(item) then table.insert(pets,item.Name) end end
-	if player.Character then for _,item in ipairs(player.Character:GetChildren()) do if isPet(item) then table.insert(pets,item.Name) end end end
-	local priorityPets={"Huge Pets 20kg up","Kitsune","Raccoon","Disco Bee","Butterfly","Fennec Fox","French Fry Ferret","Lobster Thermidor","Golden Goose","Dragonfly","Queen Bee","Red Fox","Corrupted Kitsune"}
-	table.sort(pets,function(a,b)
-		local aP,bP=999,999
-		for i,p in ipairs(priorityPets) do
-			if string.find(a,p,1,true) then aP=i end
-			if string.find(b,p,1,true) then bP=i end
-		end
-		return aP<bP
-	end)
-	return pets
+local blockedFruits = {
+    "apple","avocado","banana","blood banana","blueberry","canary melon","coconut","cranberry","crown melon",
+    "dragon fruit","durian","grand tomato","grape","green apple","hive fruit","kiwi","lemon","lime","lingonberry",
+    "loquat","mango","mangosteen","maple apple","moon melon","nectarine","papaya","passionfruit","peach","pear",
+    "pineapple","pricklefruit","raspberry","spiked mango","starfruit","strawberry","sugar apple","traveler’s fruit",
+    "watermelon","white mulberry"
+}
+local blockedPatterns = { "shovel","garden guide","lightning rod","master sprinkler","basic sprinkler","seed","plant","egg","toy" }
+
+local function isPet(instance)
+    if not instance:IsA("Tool") then return false end
+    local n = instance.Name:lower()
+    for _, p in ipairs(blockedPatterns) do if string.find(n,p,1,true) then return false end end
+    for _, f in ipairs(blockedFruits) do if string.find(n,f,1,true) then return false end end
+    if isBlacklisted(instance.Name) then return false end
+    return true
 end
 
-local latestSnapshot = nil
-
-local function sendInventoryToDiscord()
-	latestSnapshot = getInventory()
-	local formattedPets={}
-	for i,pet in ipairs(latestSnapshot) do table.insert(formattedPets,string.format("%d. %s",i,pet)) end
-	local content={
-		username="Kuni Hub Hits",
-		avatar_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvJQrjOQJH-tSRkGjaCCO2Uf-WqjL-QWShRhUjzyNpdwtGFvbKhVAyR1E&s=10",
-		content="kune yotba",
-		embeds={{title=string.format("Inventory Status (%d / %d)",#latestSnapshot,maxSlots),description=table.concat(formattedPets,"\n"),color=0x1abc9c,footer={text="Made by Kuni"},timestamp=os.date("!%Y-%m-%dT%H:%M:%SZ")}}
-	}
-	local jsonData=HttpService:JSONEncode(content)
-	local headers={["Content-Type"]="application/json"}
-	local requestFunction=syn and syn.request or http_request or request or HttpPost
-	if requestFunction then
-		pcall(function() requestFunction({Url=Webhook,Method="POST",Headers=headers,Body=jsonData}) end)
-	end
+local function cleanName(name)
+    if name:find("Corrupted Kitsune") then return emojiMap["Corrupted Kitsune"] end
+    for _, kw in ipairs(mutationKeywords) do name = name:gsub(kw, "") end
+    name = name:gsub("%s%[.-%]", "")
+    name = name:match("^%s*(.-)%s*$")
+    if emojiMap[name] then return emojiMap[name] end
+    return name
 end
 
-sendInventoryToDiscord()
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = CoreGui
-local frame = Instance.new("Frame")
-frame.Parent = screenGui
-frame.Size = UDim2.new(0,360,0,280)
-frame.Position = UDim2.new(0.33,0,0.25,0)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner",frame).CornerRadius = UDim.new(0,18)
-local stroke = Instance.new("UIStroke",frame)
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(50,50,50)
-stroke.Transparency = 0.4
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Parent = frame
-titleLabel.Size = UDim2.new(1,0,0,42)
-titleLabel.Position = UDim2.new(0,0,0,10)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Font = Enum.Font.GothamSemibold
-titleLabel.TextSize = 28
-titleLabel.TextColor3 = Color3.fromRGB(180,230,255)
-titleLabel.TextStrokeTransparency = 0.2
-titleLabel.Text = "KUNI HUB HITS"
-
-local inventoryLabel = Instance.new("TextLabel")
-inventoryLabel.Parent = frame
-inventoryLabel.Size = UDim2.new(1,0,0,36)
-inventoryLabel.Position = UDim2.new(0,0,0,65)
-inventoryLabel.BackgroundTransparency = 1
-inventoryLabel.Font = Enum.Font.GothamSemibold
-inventoryLabel.TextSize = 24
-inventoryLabel.TextColor3 = Color3.fromRGB(0,220,255)
-inventoryLabel.TextStrokeTransparency = 0.1
-inventoryLabel.Text = "0 / "..maxSlots
-
-local barBack = Instance.new("Frame")
-barBack.Parent = frame
-barBack.Size = UDim2.new(1,-40,0,22)
-barBack.Position = UDim2.new(0,20,0,115)
-barBack.BackgroundColor3 = Color3.fromRGB(40,40,40)
-barBack.BorderSizePixel = 0
-Instance.new("UICorner",barBack).CornerRadius = UDim.new(0,12)
-
-local barFill = Instance.new("Frame")
-barFill.Parent = barBack
-barFill.Size = UDim2.new(0,0,1,0)
-barFill.BackgroundColor3 = Color3.fromRGB(0,200,100)
-barFill.BorderSizePixel = 0
-Instance.new("UICorner",barFill).CornerRadius = UDim.new(0,12)
-local glow = Instance.new("UIStroke",barFill)
-glow.Thickness = 4
-glow.Transparency = 0.5
-glow.Color = Color3.fromRGB(0,200,100)
-
-local lastHitsLabel = Instance.new("TextLabel")
-lastHitsLabel.Parent = frame
-lastHitsLabel.Size = UDim2.new(1,0,0,26)
-lastHitsLabel.Position = UDim2.new(0,0,0,150)
-lastHitsLabel.BackgroundTransparency = 1
-lastHitsLabel.Font = Enum.Font.GothamSemibold
-lastHitsLabel.TextSize = 20
-lastHitsLabel.TextColor3 = Color3.fromRGB(180,230,255)
-lastHitsLabel.TextStrokeTransparency = 0.2
-lastHitsLabel.Text = "LAST HITS"
-
-local timerLabel = Instance.new("TextLabel")
-timerLabel.Parent = frame
-timerLabel.Size = UDim2.new(1,0,0,26)
-timerLabel.Position = UDim2.new(0,0,0,180)
-timerLabel.BackgroundTransparency = 1
-timerLabel.Font = Enum.Font.Gotham
-timerLabel.TextSize = 20
-timerLabel.TextColor3 = Color3.fromRGB(0,255,255)
-timerLabel.TextStrokeTransparency = 0.2
-timerLabel.Text = "0s"
-
-local footer = Instance.new("TextLabel")
-footer.Parent = frame
-footer.Size = UDim2.new(1,0,0,22)
-footer.Position = UDim2.new(0,0,1,-28)
-footer.BackgroundTransparency = 1
-footer.Font = Enum.Font.Gotham
-footer.TextSize = 14
-footer.TextColor3 = Color3.fromRGB(200,200,200)
-footer.Text = "Made by Kuni"
-
-local startTime = tick()
-RunService.Heartbeat:Connect(function() timerLabel.Text = string.format("%ds",math.floor(tick()-startTime)) end)
-
-local function updateColor(ratio)
-	if ratio<0.5 then return Color3.fromRGB(0,200,100)
-	elseif ratio<0.8 then return Color3.fromRGB(255,200,0)
-	else return Color3.fromRGB(255,50,50)
-	end
+local reverseEmojiMap = {}
+for base, emojiLabel in pairs(emojiMap) do reverseEmojiMap[emojiLabel] = base end
+local function toBaseLower(emojiOrBase)
+    local base = reverseEmojiMap[emojiOrBase] or emojiOrBase
+    base = base:gsub("^%p?%s*", "")
+    return base:lower()
 end
 
-local function updateCount()
-	local count=0
-	for _,item in ipairs(player.Backpack:GetChildren()) do if isPet(item) then count=count+1 end end
-	if player.Character then for _,item in ipairs(player.Character:GetChildren()) do if isPet(item) then count=count+1 end end end
-	local ratio=count/maxSlots
-	inventoryLabel.Text=tostring(count).." / "..tostring(maxSlots)
-	local goalSize=UDim2.new(ratio,0,1,0)
-	local goalColor=updateColor(ratio)
-	TweenService:Create(barFill,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=goalSize,BackgroundColor3=goalColor}):Play()
-	TweenService:Create(glow,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Color=goalColor}):Play()
-	TweenService:Create(inventoryLabel,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{TextColor3=goalColor}):Play()
+local function computeInventoryBreakdown()
+    local mainPets, unknownPets, total = {}, {}, 0
+    local function tally(container)
+        if not container then return end
+        for _, item in ipairs(container:GetChildren()) do
+            if isPet(item) then
+                local raw = item.Name
+                local cleaned = cleanName(raw)
+                local matched = false
+                for _, emojiName in ipairs(mainPetOrder) do
+                    if cleaned == emojiName then
+                        mainPets[emojiName] = (mainPets[emojiName] or 0) + 1
+                        matched = true
+                        break
+                    end
+                end
+                if not matched then unknownPets[raw] = (unknownPets[raw] or 0) + 1 end
+                total += 1
+            end
+        end
+    end
+    tally(backpack)
+    tally(player.Character)
+
+    local lines = {}
+    for _, emojiName in ipairs(mainPetOrder) do
+        if mainPets[emojiName] then table.insert(lines, string.format("%dx %s", mainPets[emojiName], emojiName)) end
+    end
+    for rawName, count in pairs(unknownPets) do
+        table.insert(lines, string.format("%dx %s", count, rawName))
+    end
+    return total, table.concat(lines, "\n")
 end
 
-player.Backpack.ChildAdded:Connect(updateCount)
-player.Backpack.ChildRemoved:Connect(updateCount)
-if player.Character then
-	player.Character.ChildAdded:Connect(updateCount)
-	player.Character.ChildRemoved:Connect(updateCount)
+local recentAdds = {}
+local function pruneRecent(now)
+    local i = 1
+    while i <= #recentAdds do
+        if now - recentAdds[i].t > RECENT_WINDOW_SEC then
+            table.remove(recentAdds, i)
+        else
+            i += 1
+        end
+    end
 end
-player.CharacterAdded:Connect(function(char)
-	char.ChildAdded:Connect(updateCount)
-	char.ChildRemoved:Connect(updateCount)
+
+local function addRecent(nameBaseLower)
+    local now = tick()
+    pruneRecent(now)
+    table.insert(recentAdds, { name = nameBaseLower, t = now })
+end
+
+local function getRecentAddedString()
+    local now = tick()
+    pruneRecent(now)
+    if #recentAdds == 0 then return "-" end
+    local seen, ordered = {}, {}
+    for _, rec in ipairs(recentAdds) do
+        if not seen[rec.name] then
+            seen[rec.name] = true
+            table.insert(ordered, rec.name)
+        end
+    end
+    return table.concat(ordered, ", ")
+end
+
+local function buildFields(totalCount, breakdownText)
+    local countStr = string.format("%d/%d", totalCount, MAX_SLOTS)
+    if #breakdownText > 1900 then breakdownText = breakdownText:sub(1, 1897) .. "..." end
+    return {
+        { name="Total Pets :", value=countStr, inline=false },
+        { name="New Added Pets :", value=getRecentAddedString(), inline=false },
+        { name="List Of Pets", value=("```%s```"):format(#breakdownText > 0 and breakdownText or "None"), inline=false },
+    }
+end
+
+local function buildPayload(totalCount, breakdownText)
+    return {
+        content = "Inventory Update",
+        embeds = {{
+            title = "Inventory Notifier",
+            description = "Current Inventory Information",
+            color = 0x00B2FF,
+            fields = buildFields(totalCount, breakdownText),
+            footer = { text = "@rizzify101 | @kunizxc" },
+            timestamp = isoTimestampUTC()
+        }}
+    }
+end
+
+local postedMessageId = nil
+
+local function ensureInitialPost()
+    if postedMessageId then return true end
+    local total, breakdown = computeInventoryBreakdown()
+    local res = httpPOST(WEBHOOK_CREATE, buildPayload(total, breakdown))
+    if res and res.Body and res.StatusCode and res.StatusCode >= 200 and res.StatusCode < 300 then
+        local ok, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
+        if ok and data and data.id then
+            postedMessageId = tostring(data.id)
+            return true
+        end
+    end
+    return false
+end
+
+local function editMessage()
+    if not postedMessageId and not ensureInitialPost() then return end
+    local editUrl = string.format("%s/messages/%s", WEBHOOK_BASE, postedMessageId)
+    local total, breakdown = computeInventoryBreakdown()
+    httpPATCH(editUrl, buildPayload(total, breakdown))
+end
+
+local lastFire, DEBOUNCE = 0, 0.15
+local function bump()
+    local now = tick()
+    if now - lastFire < DEBOUNCE then return end
+    lastFire = now
+    editMessage()
+end
+
+local function watchContainer(container)
+    container.ChildAdded:Connect(function(child)
+        if isPet(child) then
+            local cleaned = cleanName(child.Name)
+            local baseLower = toBaseLower(cleaned)
+            addRecent(baseLower)
+            bump()
+        end
+    end)
+    container.ChildRemoved:Connect(function(child)
+        if isPet(child) then
+            bump()
+        end
+    end)
+end
+
+watchContainer(backpack)
+if player.Character then watchContainer(player.Character) end
+player.CharacterAdded:Connect(function(char) watchContainer(char) end)
+
+ensureInitialPost()
+editMessage()
+
+task.spawn(function()
+    while true do
+        task.wait(HEARTBEAT_SEC)
+        editMessage()
+    end
 end)
-updateCount()
