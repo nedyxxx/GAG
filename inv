@@ -9,7 +9,6 @@ local WEBHOOK_BASE = Webhook or ""
 if WEBHOOK_BASE == "" then return end
 local WEBHOOK_CREATE = WEBHOOK_BASE .. "?wait=true"
 local HEARTBEAT_SEC = 10
-local RECENT_WINDOW_SEC = 20
 
 local function httpSend(method, url, bodyTbl)
     local bodyJson = HttpService:JSONEncode(bodyTbl)
@@ -67,12 +66,37 @@ local function isPet(instance)
     return true
 end
 
+local function escapeLuaPattern(s)
+    return (s:gsub("(%W)","%%%1"))
+end
+
+local baseNames = {}
+for base,_ in pairs(emojiMap) do table.insert(baseNames, base) end
+table.sort(baseNames, function(a,b) return #a > #b end)
+
+local function matchBaseAnywhere(name)
+    for _, base in ipairs(baseNames) do
+        local pat = "%f[%w]" .. escapeLuaPattern(base) .. "%f[^%w]"
+        if name:find(pat) then
+            return emojiMap[base]
+        end
+    end
+    return nil
+end
+
 local function cleanName(name)
     if name:find("Corrupted Kitsune") then return emojiMap["Corrupted Kitsune"] end
-    for _, kw in ipairs(mutationKeywords) do name = name:gsub(kw, "") end
     name = name:gsub("%s%[.-%]", "")
     name = name:match("^%s*(.-)%s*$")
-    if emojiMap[name] then return emojiMap[name] end
+    local hit = matchBaseAnywhere(name)
+    if hit then return hit end
+    for _, kw in ipairs(mutationKeywords) do
+        local pattern = "%f[%a]" .. kw .. "%f[^%a]"
+        name = name:gsub(pattern, "")
+    end
+    name = name:gsub("%s+", " "):match("^%s*(.-)%s*$")
+    hit = matchBaseAnywhere(name) or emojiMap[name]
+    if hit then return hit end
     return name
 end
 
@@ -118,36 +142,24 @@ local function computeInventoryBreakdown()
     return total, table.concat(lines, "\n")
 end
 
+-- rolling unique list of last 10 added pets (base lowercase)
 local recentAdds = {}
-local function pruneRecent(now)
-    local i = 1
-    while i <= #recentAdds do
-        if now - recentAdds[i].t > RECENT_WINDOW_SEC then
+local function pushRecent(nameBaseLower)
+    for i = #recentAdds, 1, -1 do
+        if recentAdds[i] == nameBaseLower then
             table.remove(recentAdds, i)
-        else
-            i += 1
+            break
         end
     end
-end
-
-local function addRecent(nameBaseLower)
-    local now = tick()
-    pruneRecent(now)
-    table.insert(recentAdds, { name = nameBaseLower, t = now })
+    table.insert(recentAdds, nameBaseLower)
+    if #recentAdds > 10 then
+        table.remove(recentAdds, 1)
+    end
 end
 
 local function getRecentAddedString()
-    local now = tick()
-    pruneRecent(now)
     if #recentAdds == 0 then return "-" end
-    local seen, ordered = {}, {}
-    for _, rec in ipairs(recentAdds) do
-        if not seen[rec.name] then
-            seen[rec.name] = true
-            table.insert(ordered, rec.name)
-        end
-    end
-    return table.concat(ordered, ", ")
+    return table.concat(recentAdds, ", ")
 end
 
 local function buildFields(totalCount, breakdownText)
@@ -161,8 +173,10 @@ local function buildFields(totalCount, breakdownText)
 end
 
 local function buildPayload(totalCount, breakdownText)
+    local msgContent = "Inventory Update"
+    if totalCount >= MAX_SLOTS then msgContent = "@everyone Inventory Full!" end
     return {
-        content = "Inventory Update",
+        content = msgContent,
         embeds = {{
             title = "Inventory Notifier",
             description = "Current Inventory Information",
@@ -175,19 +189,21 @@ local function buildPayload(totalCount, breakdownText)
 end
 
 local postedMessageId = nil
+local creatingMessage = false
 
 local function ensureInitialPost()
-    if postedMessageId then return true end
+    if postedMessageId or creatingMessage then return postedMessageId ~= nil end
+    creatingMessage = true
     local total, breakdown = computeInventoryBreakdown()
     local res = httpPOST(WEBHOOK_CREATE, buildPayload(total, breakdown))
     if res and res.Body and res.StatusCode and res.StatusCode >= 200 and res.StatusCode < 300 then
         local ok, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
         if ok and data and data.id then
             postedMessageId = tostring(data.id)
-            return true
         end
     end
-    return false
+    creatingMessage = false
+    return postedMessageId ~= nil
 end
 
 local function editMessage()
@@ -197,12 +213,15 @@ local function editMessage()
     httpPATCH(editUrl, buildPayload(total, breakdown))
 end
 
-local lastFire, DEBOUNCE = 0, 0.15
-local function bump()
-    local now = tick()
-    if now - lastFire < DEBOUNCE then return end
-    lastFire = now
-    editMessage()
+-- coalesced scheduler (avoid missed updates and spam)
+local editScheduled = false
+local function scheduleEdit()
+    if editScheduled then return end
+    editScheduled = true
+    task.delay(0.25, function()
+        editScheduled = false
+        editMessage()
+    end)
 end
 
 local function watchContainer(container)
@@ -210,13 +229,13 @@ local function watchContainer(container)
         if isPet(child) then
             local cleaned = cleanName(child.Name)
             local baseLower = toBaseLower(cleaned)
-            addRecent(baseLower)
-            bump()
+            pushRecent(baseLower)
+            scheduleEdit()
         end
     end)
     container.ChildRemoved:Connect(function(child)
         if isPet(child) then
-            bump()
+            scheduleEdit()
         end
     end)
 end
@@ -226,11 +245,11 @@ if player.Character then watchContainer(player.Character) end
 player.CharacterAdded:Connect(function(char) watchContainer(char) end)
 
 ensureInitialPost()
-editMessage()
+scheduleEdit()
 
 task.spawn(function()
     while true do
         task.wait(HEARTBEAT_SEC)
-        editMessage()
+        scheduleEdit()
     end
 end)
