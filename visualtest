@@ -1,4 +1,49 @@
 
+-- Hide "restocked", "admin abuse", and "reset" announcements
+-- Visual only, for external executor
+-- Author: nedyx
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- keywords to block
+local blockedKeywords = {
+    "restocked",
+    "admin abuse",
+    "reset"
+}
+
+local function shouldBlock(text)
+    if not text then return false end
+    text = string.lower(text)
+    for _, word in ipairs(blockedKeywords) do
+        if string.find(text, word) then
+            return true
+        end
+    end
+    return false
+end
+
+-- function to hide blocked announcements
+local function hideBlocked(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        if shouldBlock(obj.Text) then
+            obj.Visible = false
+        end
+    end
+end
+
+-- hide existing ones
+for _, gui in pairs(PlayerGui:GetDescendants()) do
+    hideBlocked(gui)
+end
+
+-- hide new ones instantly
+PlayerGui.DescendantAdded:Connect(function(obj)
+    hideBlocked(obj)
+end)
+
 
 -- Visual pet hatch simulator with drag, ESP, auto random, pet age loader
 local Players = game:GetService("Players")
