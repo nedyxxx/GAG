@@ -279,30 +279,37 @@ local function countdownAndRandomize(button)
     button.Text = "🎲 Randomize Pets"
 end
 
+
 -- 🌿 GUI Setup
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.Name = "PetHatchGui"
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 320, 0, 200) -- shorter height
-frame.Position = UDim2.new(0, 20, 0, 80)
-frame.BackgroundColor3 = Color3.fromRGB(20, 0, 40)
-frame.BackgroundTransparency = 0.1
+frame.Size = UDim2.new(0, 340, 0, 220)
+frame.Position = UDim2.new(0, 30, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(245, 245, 245) -- white background
+frame.BackgroundTransparency = 0
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local shadow = Instance.new("UIStroke", frame)
+shadow.Color = Color3.fromRGB(0, 200, 100) -- green accent
+shadow.Thickness = 2
+shadow.Transparency = 0.2
 
 
 -- 🔘 Toggle Button (Draggable + Minimize)
 local minimizeToggle = Instance.new("TextButton", screenGui)
-minimizeToggle.Size = UDim2.new(0, 40, 0, 40)
-minimizeToggle.Position = UDim2.new(0, 10, 0, 10)
-minimizeToggle.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
-minimizeToggle.Text = "☠"
-minimizeToggle.TextColor3 = Color3.new(1, 0, 0)
-minimizeToggle.Font = Enum.Font.Arcade
-minimizeToggle.TextSize = 24
+minimizeToggle.Size = UDim2.new(0, 36, 0, 36)
+minimizeToggle.Position = UDim2.new(0, 15, 0, 15)
+minimizeToggle.BackgroundColor3 = Color3.fromRGB(0, 180, 90)
+minimizeToggle.Text = "≡"
+minimizeToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeToggle.Font = Enum.Font.GothamBold
+minimizeToggle.TextSize = 20
 Instance.new("UICorner", minimizeToggle).CornerRadius = UDim.new(0, 8)
+
 
 -- 🧲 Drag Support for Toggle Button
 local draggingToggle, offsetToggle
@@ -326,20 +333,17 @@ minimizeToggle.MouseButton1Click:Connect(function()
  frame.Visible = isVisible
 end)
 
-local shadow = Instance.new("UIStroke", frame)
-shadow.Color = Color3.fromRGB(255, 0, 100)
-shadow.Thickness = 2
-shadow.Transparency = 0
 
-local b1, b2, b3 = "u", "n", "k"
-
+-- 🏷️ Title Bar
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, -20, 0, 35)
+title.Position = UDim2.new(0, 10, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "👹 Egg Randomizer 👁️"
-title.Font = Enum.Font.FredokaOne
+title.Text = "🌱 Egg Randomizer"
+title.Font = Enum.Font.GothamBold
 title.TextSize = 22
-title.TextColor3 = Color3.fromRGB(255, 0, 100)
+title.TextColor3 = Color3.fromRGB(0, 150, 70)
+title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- 👇 Dragging
 local drag = Instance.new("TextButton", title)
@@ -361,35 +365,37 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+
 -- 🎲 Randomize Button
 local randomizeBtn = Instance.new("TextButton", frame)
 randomizeBtn.Size = UDim2.new(1, -20, 0, 50)
-randomizeBtn.Position = UDim2.new(0, 10, 0, 40)
-randomizeBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+randomizeBtn.Position = UDim2.new(0, 10, 0, 50)
+randomizeBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 randomizeBtn.Text = "🐣 Hatch Random Pets"
-randomizeBtn.BackgroundColor3 = Color3.fromRGB(128, 0, 128) -- Purple
 randomizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 randomizeBtn.Font = Enum.Font.GothamBold
 randomizeBtn.TextSize = 18
-Instance.new("UICorner", randomizeBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", randomizeBtn).CornerRadius = UDim.new(0, 10)
 local stroke = Instance.new("UIStroke", randomizeBtn)
-stroke.Color = Color3.fromRGB(255, 0, 100)
+stroke.Color = Color3.fromRGB(0, 120, 60)
 stroke.Thickness = 2
-stroke.Transparency = 0
+stroke.Transparency = 0.1
 randomizeBtn.MouseButton1Click:Connect(function()
     flashEffect(randomizeBtn)
     randomizeNearbyEggs()
 end)
 
+
 -- 👁️ ESP Toggle
 local toggleBtn = Instance.new("TextButton", frame)
 toggleBtn.Size = UDim2.new(1, -20, 0, 40)
-toggleBtn.Position = UDim2.new(0, 10, 0, 100)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+toggleBtn.Position = UDim2.new(0, 10, 0, 110)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 toggleBtn.Text = "🧿 ESP: ON"
 toggleBtn.TextSize = 18
-toggleBtn.Font = Enum.Font.FredokaOne
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextColor3 = Color3.fromRGB(0, 150, 70)
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
 toggleBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     toggleBtn.Text = espEnabled and "🧿 ESP: ON" or "🧿 ESP: OFF"
@@ -407,15 +413,17 @@ for _, egg in pairs(getPlayerGardenEggs(60)) do
     applyEggESP(egg, truePetMap[egg])
 end
 
+
 -- 🔁 Auto Randomize Button
 local autoBtn = Instance.new("TextButton", frame)
-autoBtn.Size = UDim2.new(1, -20, 0, 30)
-autoBtn.Position = UDim2.new(0, 10, 0, 145)
-autoBtn.BackgroundColor3 = Color3.fromRGB(80, 150, 60)
+autoBtn.Size = UDim2.new(1, -20, 0, 35)
+autoBtn.Position = UDim2.new(0, 10, 0, 160)
+autoBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 90)
 autoBtn.Text = "🔁 Auto Randomize: OFF"
 autoBtn.TextSize = 16
-autoBtn.Font = Enum.Font.FredokaOne
-autoBtn.TextColor3 = Color3.new(1, 1, 1)
+autoBtn.Font = Enum.Font.GothamBold
+autoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0, 8)
 
 local autoRunning = false
 local bestPets = {
@@ -438,7 +446,7 @@ autoBtn.MouseButton1Click:Connect(function()
                     return
                 end
             end
-            wait(1) -- keeps looping quickly
+            wait(1)
         end
     end)()
 end)
