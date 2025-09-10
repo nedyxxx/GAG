@@ -145,66 +145,55 @@ local function applyEggESP(eggModel, petName)
     -- billboard
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "PetBillboard"
-    billboard.Size = UDim2.new(0, 140, 0, 50) -- smaller, compact
+    billboard.Size = UDim2.new(0, 150, 0, 60)
     billboard.StudsOffset = Vector3.new(0, 4.5, 0)
     billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 400
+    billboard.MaxDistance = 450
     billboard.Parent = basePart
 
-    -- background
+    -- container
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    frame.BackgroundTransparency = 0.25
+    frame.BackgroundTransparency = 1
     frame.BorderSizePixel = 0
     frame.Parent = billboard
 
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-    local stroke = Instance.new("UIStroke", frame)
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 1.2
-    stroke.Transparency = 0.6
-
-    -- egg name (title)
+    -- egg name (bold white, strong stroke)
     local eggLabel = Instance.new("TextLabel")
-    eggLabel.Size = UDim2.new(1, -6, 0.5, 0)
-    eggLabel.Position = UDim2.new(0, 3, 0, 0)
+    eggLabel.Size = UDim2.new(1, 0, 0.5, 0)
     eggLabel.BackgroundTransparency = 1
     eggLabel.Text = string.upper(eggModel.Name)
-    eggLabel.Font = Enum.Font.GothamBold
+    eggLabel.Font = Enum.Font.GothamBlack -- extra bold
     eggLabel.TextScaled = true
-    eggLabel.TextColor3 = Color3.fromRGB(255, 215, 0) -- gold
-    eggLabel.TextStrokeTransparency = 0.3
+    eggLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    eggLabel.TextStrokeTransparency = 0 -- solid outline
+    eggLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     eggLabel.Parent = frame
 
-    -- pet name (subtitle)
+    -- pet name (bold, bright green or purple, stroke for visibility)
     local petLabel = Instance.new("TextLabel")
-    petLabel.Size = UDim2.new(1, -6, 0.5, 0)
-    petLabel.Position = UDim2.new(0, 3, 0.5, -2)
+    petLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    petLabel.Position = UDim2.new(0, 0, 0.5, 0)
     petLabel.BackgroundTransparency = 1
-    if hatchReady then
-        petLabel.Text = "[" .. petName .. "]"
-        petLabel.TextColor3 = Color3.fromRGB(120, 255, 150) -- soft green
-    else
-        petLabel.Text = "[" .. petName .. " ✖]"
-        petLabel.TextColor3 = Color3.fromRGB(190, 80, 255) -- purple
-    end
-    petLabel.Font = Enum.Font.Gotham
+    petLabel.Text = hatchReady and petName or petName .. " ✖"
+    petLabel.Font = Enum.Font.GothamBold
     petLabel.TextScaled = true
-    petLabel.TextStrokeTransparency = 0.5
+    petLabel.TextColor3 = hatchReady and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(200, 100, 255)
+    petLabel.TextStrokeTransparency = 0.1
+    petLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     petLabel.Parent = frame
 
-    -- highlight
+    -- highlight (stronger and more visible)
     local highlight = Instance.new("Highlight")
     highlight.Name = "ESPHighlight"
-    highlight.FillColor = Color3.fromRGB(255, 200, 0)
+    highlight.FillColor = hatchReady and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(200, 100, 255)
     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.FillTransparency = 0.75
+    highlight.FillTransparency = 0.5
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Adornee = eggModel
+    highlight.Adornee = basePart
     highlight.Parent = eggModel
 end
+
 
 
 local function removeEggESP(eggModel)
