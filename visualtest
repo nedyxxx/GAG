@@ -381,7 +381,6 @@ stroke.Color = Color3.fromRGB(0, 120, 60)
 stroke.Thickness = 2
 stroke.Transparency = 0.1
 randomizeBtn.MouseButton1Click:Connect(function()
-    flashEffect(randomizeBtn)
     randomizeNearbyEggs()
 end)
 
