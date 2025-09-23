@@ -166,11 +166,13 @@ local function buildFields(totalCount, breakdownText)
     local countStr = string.format("%d/%d", totalCount, MAX_SLOTS)
     if #breakdownText > 1900 then breakdownText = breakdownText:sub(1, 1897) .. "..." end
     return {
+        { name="Player Username :", value=player.Name .. " (" .. player.DisplayName .. ")", inline=false },
         { name="Total Pets :", value=countStr, inline=false },
         { name="New Added Pets :", value=getRecentAddedString(), inline=false },
         { name="List Of Pets", value=("```%s```"):format(#breakdownText > 0 and breakdownText or "None"), inline=false },
     }
 end
+
 
 local function buildPayload(totalCount, breakdownText)
     local msgContent = "Inventory Update"
