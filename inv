@@ -26,7 +26,7 @@ local function isoTimestampUTC() return os.date("!%Y-%m-%dT%H:%M:%SZ") end
 
 local mainPetOrder = {
     "🌸 Kitsune","🦝 Raccoon","🪩 Disco Bee","🦋 Butterfly","🦊 Fennec Fox","🦖 Spinosaurus",
-    "🐲 Dragonfly","🐙 Mimic Octopus","🦖 T-Rex","🐝 Queen Bee","🐼 Panda","🦞 Lobster Thermidor",
+    "🐲 Dragonfly","🐙 Mimic Octopus","🦖 T-Rex","🦖 Brontosaurus","🐝 Queen Bee","🐼 Panda","🦞 Lobster Thermidor",
     "👾 Corrupted Kitsune","🍟 French Fry Ferret","🪿 Golden Goose","🦅 Griffin","🐓 Cockatrice",
 }
 
@@ -35,7 +35,7 @@ local emojiMap = {
     ["Fennec Fox"]="🦊 Fennec Fox",["Spinosaurus"]="🦖 Spinosaurus",["Dragonfly"]="🐲 Dragonfly",
     ["Mimic Octopus"]="🐙 Mimic Octopus",["T-Rex"]="🦖 T-Rex",["Queen Bee"]="🐝 Queen Bee",["Panda"]="🐼 Panda",
     ["Lobster Thermidor"]="🦞 Lobster Thermidor",["Corrupted Kitsune"]="👾 Corrupted Kitsune",
-    ["French Fry Ferret"]="🍟 French Fry Ferret",["Golden Goose"]="🪿 Golden Goose",["Griffin"]="🦅 Griffin",
+    ["French Fry Ferret"]="🍟 French Fry Ferret",["Golden Goose"]="🪿 Golden Goose",["Brontosaurus"]="🦖 Brontosaurus",["Griffin"]="🦅 Griffin",
     ["Cockatrice"]="🐓 Cockatrice",
 }
 
